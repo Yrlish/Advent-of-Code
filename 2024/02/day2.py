@@ -22,10 +22,10 @@ def check_distance(levels: typing.List[int]) -> bool:
   return True
 
 
-def puzzle1():
+def puzzle1(filename="input.txt"):
   total = 0
 
-  with open("input.txt", "r") as file:
+  with open(filename, "r") as file:
     for report in file:
       levels = report.split()
       levels = [int(level) for level in levels]
@@ -34,14 +34,13 @@ def puzzle1():
         if check_distance(levels):
           total += 1
 
-  print("Answer 1: {}".format(total))
-  assert total == 670
+  return total
 
 
-def puzzle2():
+def puzzle2(filename="input.txt"):
   total = 0
 
-  with open("input.txt", "r") as reports_file:
+  with open(filename, "r") as reports_file:
     for report in reports_file:
       levels = report.split()
       levels = [int(level) for level in levels]
@@ -59,10 +58,12 @@ def puzzle2():
             total += 1
             break
 
-  print("Answer 2: {}".format(total))
-  assert total == 700
+  return total
 
 
 if __name__ == '__main__':
-  puzzle1()
-  puzzle2()
+  answer1 = puzzle1()
+  print(f"Answer 1: {answer1}")
+
+  answer2 = puzzle2()
+  print(f"Answer 2: {answer2}")
