@@ -1,8 +1,12 @@
 from collections import namedtuple
 from enum import Enum
-from typing import List
+from typing import List, Set
 
 Coord = namedtuple("Coord", "x y")
+
+
+class DupeExcetion(Exception):
+  pass
 
 
 class Direction(Enum):
@@ -26,8 +30,9 @@ class Guard:
   def __init__(self, starting_position: Coord):
     self.position = starting_position
     self.direction = Direction.UP
-    self.history = [starting_position]
-    print(f"Starting at position {starting_position}")
+    self.path = {starting_position}
+    self.cache = {(starting_position, Direction.UP)}
+    # print(f"Starting at position {starting_position}")
 
   @property
   def next_position(self) -> Coord:
@@ -35,43 +40,49 @@ class Guard:
 
   @property
   def unique_positions(self):
-    return len(set(self.history))
+    return len(set(self.path))
 
   def rotate(self):
     self.direction = self.direction.next()
-    print(f"Rotating to {self.direction.name}")
+    # print(f"Rotating to {self.direction.name}")
 
   def step(self):
     self.position = self.next_position
-    self.history.append(self.position)
-    print(f"Position {len(self.history)} at {self.position}")
+    self.path.add(self.position)
+
+    cache_item = (self.position, self.direction)
+    if not cache_item in self.cache:
+      self.cache.add(cache_item)
+    else:
+      raise DupeExcetion()
+    # print(f"Position {len(self.history)} at {self.position}")
+
+  def same_path(self, position: Coord) -> bool:
+    return (position, self.direction) in self.cache
 
 
 class Map:
-  obstructions: List[Coord] = []
-  guard: Guard = None
-
   def __init__(self, grid: List[List[str]]):
-    self.height = len(grid) + 1
+    self.height = len(grid)
     if self.height == 0:
       raise Exception("Invalid grid")
-    self.width = len(grid[0]) + 1
+    self.width = len(grid[0])
+    self.obstructions: Set[Coord] = set()
+    self.guard: Guard = None
+
     self._parse_grid(grid)
 
   def _parse_grid(self, grid: List[List[str]]):
     for y, row in enumerate(grid):
       for x, cell in enumerate(row):
         if cell == "#":
-          self.obstructions.append(Coord(x + 1, y + 1))
+          self.obstructions.add(Coord(x, y))
         if cell == "^":
-          self.guard = Guard(Coord(x + 1, y + 1))
+          self.guard = Guard(Coord(x, y))
 
   def step_guard(self) -> bool:
-    """
-    Steps guard forward by one, returns true while guard is inside map
-    """
     if self.guard.next_position in self.obstructions:
-      print(f"> Next position {self.guard.next_position} is obstructed")
+      # print(f"> Next position {self.guard.next_position} is obstructed")
       self.guard.rotate()
 
     self.guard.step()
@@ -95,3 +106,36 @@ def puzzle1(filename):
     pass
 
   return map.guard.unique_positions
+
+
+def puzzle2(filename):
+  grid = []
+
+  with open(filename, "r") as file:
+    for line in file:
+      grid += [[letter for letter in line.strip()]]
+
+  map = Map(grid)
+
+  while map.step_guard():
+    pass
+
+  candidates = list(map.guard.path)[1:]
+  loops = 0
+  print(f"Candidates: {len(candidates)}")
+
+  for i, candidate in enumerate(candidates, 1):
+    map2 = Map(grid)
+    map2.obstructions.add(candidate)
+
+    try:
+      while map2.step_guard():
+        pass
+    except DupeExcetion:
+      loops += 1
+      continue
+
+    if (i % 100) == 0:
+      print(f"Candidate #{i} of {len(candidates)} - loops: {loops}")
+
+  return loops
